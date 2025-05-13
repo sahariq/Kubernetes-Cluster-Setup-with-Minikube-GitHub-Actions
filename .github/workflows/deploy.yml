@@ -6,11 +6,18 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
+    - name: Setup SSH
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_KEY }}" > ~/.ssh/github-actions-key
+        chmod 600 ~/.ssh/github-actions-key
+        echo "${{ secrets.SSH_HOST }} $(ssh-keyscan -t ed25519 ${{ secrets.SSH_HOST }} 2>/dev/null)" >> ~/.ssh/known_hosts
+
     - name: Deploy to Minikube
       run: |
-        ssh -i <(echo "${{ secrets.SSH_KEY }}") \
-          -o StrictHostKeyChecking=no \
-          ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} \
-          "cd ~/scdproject && \
-          kubectl apply -f deployment.yaml && \
-          kubectl rollout status deployment/my-app"
+        ssh -o StrictHostKeyChecking=no \
+            -i ~/.ssh/github-actions-key \
+            ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} \
+            "cd ~/scdproject && \
+            kubectl apply -f deployment.yaml && \
+            kubectl rollout status deployment/my-app"
