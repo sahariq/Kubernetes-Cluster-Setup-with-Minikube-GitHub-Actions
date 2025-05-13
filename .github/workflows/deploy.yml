@@ -1,25 +1,26 @@
 name: Deploy
+
 on: [push]
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
     - uses: actions/checkout@v4
 
     - name: Setup SSH
       run: |
         mkdir -p ~/.ssh
-        echo "${{ secrets.SSH_KEY }}" > ~/.ssh/github-actions-key
-        chmod 600 ~/.ssh/github-actions-key
-        ssh-keyscan -t ed25519 ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+        echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
     - name: Deploy to Minikube
       run: |
-        ssh -o StrictHostKeyChecking=no \
-            -i ~/.ssh/github-actions-key \
-            ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} \
-            "set -e && \
-             cd ~/scdproject && \
-             kubectl apply -f deployment.yaml && \
-             kubectl rollout status deployment/my-app"
+        ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} "
+          cd ~/scdproject &&
+          kubectl apply -f deployment.yaml &&
+          kubectl rollout status deployment/my-app
+        "
 
