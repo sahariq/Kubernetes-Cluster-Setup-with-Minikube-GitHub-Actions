@@ -2,6 +2,7 @@ name: Deploy to Minikube
 on: [push]
 
 jobs:
+<<<<<<< HEAD
   deploy:
     runs-on: ubuntu-latest
     steps:
@@ -21,3 +22,22 @@ jobs:
             "cd ~/scdproject && \
              kubectl apply -f deployment.yaml && \
              kubectl rollout status deployment/my-app"
+=======
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Build Docker image
+      run: docker build -t my-app:latest .
+      
+    - name: Deploy to Minikube (SSH)
+      uses: appleboy/ssh-action@v1
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          kubectl apply -f deployment.yaml
+          kubectl rollout status deployment/my-app
+>>>>>>> 88fc545fa60a858b5bb206840baa78fb22da172d
