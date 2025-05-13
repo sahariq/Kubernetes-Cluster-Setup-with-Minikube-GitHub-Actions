@@ -1,0 +1,41 @@
+name: CI/CD Demo (Visual Only)
+on: [push]
+
+jobs:
+  fake-deployment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: "Simulate: Build Docker Image"
+        run: |
+          echo "✅ Successfully built Docker image my-app:latest"
+          echo "Size: 287MB"
+          echo "Layers: 12"
+
+      - name: "Simulate: Push to Docker Hub"
+        run: |
+          echo "🔄 Pushing to docker.io/yourusername/my-app:latest"
+          echo "📦 Layer 1/12: pushed"
+          echo "📦 Layer 12/12: pushed"
+          echo "✅ Successfully pushed"
+
+      - name: "Simulate: Deploy to Kubernetes"
+        run: |
+          echo "🚀 Applying deployment.yaml"
+          echo "🔧 Configuring service..."
+          echo "🔄 Waiting for pods..."
+          echo "✅ Deployment successful!"
+          echo "🌐 Service URL: http://192.168.49.2:30007"
+
+      - name: "Simulate: Verification"
+        run: |
+          echo "🔍 Running tests..."
+          echo "✔️ All tests passed (12/12)"
+          echo "📊 Metrics:"
+          echo "  - CPU: 12%"
+          echo "  - Memory: 287MB"
+          echo "🚀 Deployment verified!"
