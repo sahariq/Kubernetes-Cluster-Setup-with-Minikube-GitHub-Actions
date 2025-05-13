@@ -5,68 +5,34 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      # =====================
-      # 1. SSH SETUP (FULL DEBUG)
-      # =====================
-      - name: Setup SSH Environment
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/minikube_key
-          chmod 600 ~/.ssh/minikube_key
-          ssh-keyscan -t ed25519 ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
-          
-          echo "=== DEBUG: SSH CONFIG ==="
-          ls -la ~/.ssh/
-          echo "Key contents:"
-          head -n 2 ~/.ssh/minikube_key
-          echo "..."
-          tail -n 2 ~/.ssh/minikube_key
-          echo "Known hosts:"
-          cat ~/.ssh/known_hosts
+    # SSH Setup
+    - name: Configure SSH
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_KEY }}" > ~/.ssh/minikube_key
+        chmod 600 ~/.ssh/minikube_key
+        echo "${{ secrets.SSH_HOST }} $(ssh-keyscan -t ed25519 ${{ secrets.SSH_HOST }} 2>/dev/null)" >> ~/.ssh/known_hosts
 
-      # =====================
-      # 2. CONNECTION TEST
-      # =====================
-      - name: Test SSH Connection
-        run: |
-          ssh -vvv -i ~/.ssh/minikube_key \
-              -o ConnectTimeout=15 \
-              ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} \
-              "echo 'SSH connection successful!'; 
-               docker ps; 
-               kubectl cluster-info"
+    # Deployment
+    - name: Deploy Application
+      run: |
+        ssh -o ConnectTimeout=30 \
+            -i ~/.ssh/minikube_key \
+            ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} << 'EOF'
+        cd ~/scdproject || exit 1
+        kubectl apply -f deployment.yaml
+        kubectl rollout status deployment/my-app --timeout=120s
+        minikube service list
+        EOF
 
-      # =====================
-      # 3. DEPLOYMENT
-      # =====================
-      - name: Deploy to Minikube
-        run: |
-          ssh -i ~/.ssh/minikube_key \
-              ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} << 'DEPLOY_EOF'
-          # Inside Minikube VM
-          cd ~/scdproject || exit 1
-          echo "=== Current Directory ==="
-          ls -la
-          
-          echo "=== Applying Kubernetes Manifests ==="
-          kubectl delete -f deployment.yaml --ignore-not-found
-          kubectl apply -f deployment.yaml
-          
-          echo "=== Verification ==="
-          kubectl get pods -w --timeout=120s
-          kubectl rollout status deployment/my-app --timeout=120s
-          minikube service list
-          DEPLOY_EOF
-
-      # =====================
-      # 4. FINAL VERIFICATION
-      # =====================
-      - name: Verify Deployment
-        run: |
-          ssh -i ~/.ssh/minikube_key \
-              ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} \
-              "kubectl get all -o wide; 
-               curl -s $(minikube service my-app-service --url)"
+    # Verification
+    - name: Verify Deployment
+      run: |
+        ssh -i ~/.ssh/minikube_key \
+            ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} \
+            "kubectl get pods,svc -o wide && \
+            curl -sI $(minikube service my-app-service --url)"
