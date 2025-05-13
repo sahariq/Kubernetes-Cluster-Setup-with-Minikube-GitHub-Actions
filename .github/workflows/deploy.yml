@@ -1,0 +1,21 @@
+name: Deploy to Minikube
+on: [push]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Build Docker image
+      run: docker build -t my-app:latest .
+      
+    - name: Deploy to Minikube (SSH)
+      uses: appleboy/ssh-action@v1
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          kubectl apply -f deployment.yaml
+          kubectl rollout status deployment/my-app
