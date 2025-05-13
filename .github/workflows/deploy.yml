@@ -1,20 +1,16 @@
-name: Deploy to Minikube
+name: Deploy
 on: [push]
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            cd ~/scdproject
-            kubectl apply -f deployment.yaml
-            kubectl rollout status deployment/my-app
+    - uses: actions/checkout@v4
+    
+    - name: Deploy to Minikube
+      run: |
+        ssh -i <(echo "${{ secrets.SSH_KEY }}") \
+          -o StrictHostKeyChecking=no \
+          ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} \
+          "cd ~/scdproject && \
+          kubectl apply -f deployment.yaml && \
+          kubectl rollout status deployment/my-app"
