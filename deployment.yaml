@@ -14,8 +14,11 @@ spec:
     spec:
       containers:
       - name: my-app
-
         image: my-app:latest
-        imagePullPolicy: Never
+        imagePullPolicy: Never  # Critical for local images
         ports:
         - containerPort: 80
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
